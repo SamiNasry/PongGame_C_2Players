@@ -1,3 +1,6 @@
+/* Sami Nasry - Pong Game - 2024*/
+
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
 #include <SDL2/SDL_events.h>
@@ -16,18 +19,22 @@
 #define PADDLE_SPEED 5
 #define BALL_SPEED 5
 
+
+// PADDLE STRUCTURE
 typedef struct {
 	SDL_Rect rect;
 	int dy;
 } Paddle;
 
 
+// BALL STRUCTURE
 typedef struct {
 	SDL_Rect rect;
 	int dx,dy;
 } Ball;
 
 
+// RESET BALL POSITION TO THE CENTER OF THE SCREEN AND RANDOME START DIRECTION
 void reset_ball(Ball* ball)
 {
 	ball->rect.x = (WINDOW_WIDTH / 2) - (BALL_SIZE / 2);
@@ -36,8 +43,12 @@ void reset_ball(Ball* ball)
 	ball->dy = BALL_SPEED * (rand() % 2 == 0 ? 1 : -1);
 }
 
+
+// MAIN GAME LOGIC
+
 int main(int argc, char* argv[])
 {
+
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	TTF_Font* font = NULL;
@@ -46,18 +57,22 @@ int main(int argc, char* argv[])
 	bool quit = false;
 	SDL_Event event;
 
+	// PADDLE, BALL AND SCORE INITIALIZATION
 	Paddle paddle1 = {{20, (WINDOW_HEIGHT / 2) - (PADDLE_HEIGHT/2), PADDLE_WIDTH, PADDLE_HEIGHT}, 0};
 	Paddle paddle2 = {{WINDOW_WIDTH - 30, (WINDOW_HEIGHT / 2) - (PADDLE_HEIGHT / 2), 
 	PADDLE_WIDTH, PADDLE_HEIGHT}, 0};
 	Ball ball = {{WINDOW_WIDTH / 2 - BALL_SIZE / 2, WINDOW_HEIGHT / 2 - BALL_SIZE / 2, BALL_SIZE, BALL_SIZE}, BALL_SPEED, BALL_SPEED};
-
 	int score1 = 0, score2 = 0;
+	
+	// INITIALIZATION OF VIDEO SUBSYTEM AND SDL_TTF LIBRARY
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0 || TTF_Init() < 0 )
 	{
 		printf("SDL/TTF could not initialize! ERROR : %s\n", SDL_GetError());
 		return 1;
 	}
+
+	// WINDOW CREATION
 
 	window = SDL_CreateWindow("Pong" , SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED
 			, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
@@ -66,6 +81,8 @@ int main(int argc, char* argv[])
 		printf("Window could not be created! Error : %s\n" , SDL_GetError());
 		return 1;
 	}
+
+	// RENDERER CREATION 
 	
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -74,6 +91,8 @@ int main(int argc, char* argv[])
 		printf("Renderer could not be created! Error: %s\n", SDL_GetError());
 		return 1;
 	}
+
+	// FONT LOADING
 
 	font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 24);
 	if (!font)
@@ -86,7 +105,7 @@ int main(int argc, char* argv[])
 
 	// Main Game Logic
 	
-
+	// POLL FOR PENDING EVENTS. HANDLEE QUIT EVENTS AND KEYBOARD EVENTS FOR PADDLE MOVEMENTS
 	while(!quit)
 	{
 		while (SDL_PollEvent(&event) != 0)
@@ -119,10 +138,12 @@ int main(int argc, char* argv[])
 
 
 		}
-			paddle1.rect.y += paddle1.dy;
+
+	// MOVE THE PADDLES 
+	paddle1.rect.y += paddle1.dy;
 	paddle2.rect.y += paddle2.dy;
 
-	// Constrain paddles to window
+	// CONSTRAIN PADDLES TO THE WINDOW	 
 
 	if (paddle1.rect.y < 0) paddle1.rect.y = 0;
 	if (paddle1.rect.y > (WINDOW_HEIGHT - PADDLE_HEIGHT)) paddle1.rect.y = (WINDOW_HEIGHT - PADDLE_HEIGHT);
@@ -130,24 +151,24 @@ int main(int argc, char* argv[])
 	if (paddle2.rect.y > (WINDOW_HEIGHT - PADDLE_HEIGHT)) paddle2.rect.y = (WINDOW_HEIGHT - PADDLE_HEIGHT);
 
 
-	// Move Ball   
+	// MOVE THE BALL 
 	ball.rect.x += ball.dx;
 	ball.rect.y += ball.dy;
 
 
-	// Ball Colision with top and bottom
+	// HANDLE BALL COLLISION WITH TOP AND BOTTOM OF THE SCREEN 
 	if (ball.rect.y <= 0 || ball.rect.y >= WINDOW_HEIGHT - BALL_SIZE)
 	{
 		ball.dy = -ball.dy;
 	}
 
-	// Ball Collision with paddles
+	// HANDLE BALL COLLISION WITH THE PADDLES
 	if (SDL_HasIntersection(&ball.rect, &paddle1.rect) || SDL_HasIntersection(&ball.rect, &paddle2.rect))
 	{
 		ball.dx = -ball.dx;
 	}
 
-	// Ball out of bounds
+	// BALL GOAL HANDLING
 	if (ball.rect.x <= 0)
 	{
 		score2++;
@@ -159,17 +180,18 @@ int main(int argc, char* argv[])
 		reset_ball(&ball);
 	}
 
-	// Clear Screen  
+	// RENDERING PROCESS
+			// SET DRAW COLOR TO BLACK AND CLEAR THE SCREEN 
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
 
-	// Render paddles and ball 
+			// SET THE DRAW COLOR TO WHITE AND THEN DRAWW THE PADDLES AND THE BALLS
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	SDL_RenderFillRect(renderer, &paddle1.rect);
 	SDL_RenderFillRect(renderer, &paddle2.rect);
 	SDL_RenderFillRect(renderer, &ball.rect);
 
-	// Render Score 
+			// RENDER THE SCORE TEXT  
 	char score_text[64];
 	snprintf(score_text, sizeof(score_text), "%d - %d" , score1 , score2);
 	SDL_Color white = {255, 255, 255};
@@ -179,19 +201,21 @@ int main(int argc, char* argv[])
 		surface->h};
 	SDL_RenderCopy(renderer, texture, NULL, &score_rect);
 
-	// Update Screen 
+	// UPDATE SCREEN WITH RENDERED STUFF 
 	SDL_RenderPresent(renderer);
 
-	// Free Resources 
+	// FREE THE SURFACE AND DESTROY TEXTURE AFTER EACH FRAME TO PREVENT MEMORY LEAKS
 	SDL_FreeSurface(surface);
 	SDL_DestroyTexture(texture);
 
+	// FPS CONTROL
 	SDL_Delay(16); // Cap at 60 fps
 
 	}	
-	// Move Paddles 
+	 
 	
-	
+
+// CLEAN UP 
 
 TTF_CloseFont(font);
 SDL_DestroyRenderer(renderer);
